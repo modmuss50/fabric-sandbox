@@ -49,23 +49,21 @@ protocol ProcThreadAttribute {
   func apply(_ attributeList: inout LPPROC_THREAD_ATTRIBUTE_LIST) throws
 }
 
-internal func updateProcThreadAttribute<T>(
+internal func updateProcThreadAttribute(
   attributeList: inout LPPROC_THREAD_ATTRIBUTE_LIST,
   attribute: DWORD,
-  value: inout T,
+  value: UnsafeMutableRawPointer,
   size: Int
 ) throws {
-  let result = withUnsafeMutablePointer(to: &value) {
-    UpdateProcThreadAttribute(
-      attributeList,
-      0,
-      DWORD_PTR(attribute),
-      $0,
-      SIZE_T(size),
-      nil,
-      nil
-    )
-  }
+  let result = UpdateProcThreadAttribute(
+    attributeList,
+    0,
+    DWORD_PTR(attribute),
+    value,
+    SIZE_T(size),
+    nil,
+    nil
+  )
   guard result else {
     throw Win32Error("UpdateProcThreadAttribute")
   }
@@ -102,6 +100,23 @@ class LessPrivilegedAppContainerProcThreadAttribute: ProcThreadAttribute {
       attribute: _PROC_THREAD_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY(),
       value: &enabled,
       size: MemoryLayout<DWORD>.size
+    )
+  }
+}
+
+class HandleListProcThreadAttribute: ProcThreadAttribute {
+  var handles: [HANDLE]
+
+  init(handles: [HANDLE]) {
+    self.handles = handles
+  }
+
+  func apply(_ attributeList: inout LPPROC_THREAD_ATTRIBUTE_LIST) throws {
+    try updateProcThreadAttribute(
+      attributeList: &attributeList,
+      attribute: _PROC_THREAD_ATTRIBUTE_HANDLE_LIST(),
+      value: &self.handles,
+      size: MemoryLayout<HANDLE>.size * self.handles.count
     )
   }
 }

@@ -57,7 +57,7 @@ public func setAccess(
   var newAcl: PACL? = nil
   result = SetEntriesInAclW(1, &explicitAccess, acl, &newAcl)
   guard result == ERROR_SUCCESS, var newAcl = newAcl else {
-    throw Win32Error("SetEntriesInAclW")
+    throw Win32Error("SetEntriesInAclW(\(path))")
   }
   defer { LocalFree(newAcl) }
 
@@ -88,7 +88,7 @@ public func setAccess(
     )
   }
   guard result == ERROR_SUCCESS else {
-    throw Win32Error("SetNamedSecurityInfoW '\(path)'", errorCode: result)
+    throw Win32Error("SetNamedSecurityInfoW(\(path))", errorCode: result)
   }
 }
 
@@ -180,7 +180,7 @@ public func grantNamedPipeAccess(
   var newAcl: PACL? = nil
   result = SetEntriesInAclW(1, &explicitAccess, acl, &newAcl)
   guard result == ERROR_SUCCESS, let newAcl = newAcl else {
-    throw Win32Error("SetEntriesInAclW")
+    throw Win32Error("SetEntriesInAclW(\(pipe.path))")
   }
   defer { LocalFree(newAcl) }
 

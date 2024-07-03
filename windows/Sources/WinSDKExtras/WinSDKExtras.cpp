@@ -56,6 +56,10 @@ DWORD _PROC_THREAD_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY() {
     return ProcThreadAttributeValue(ProcThreadAttributeAllApplicationPackagesPolicy, FALSE, TRUE, FALSE);
 }
 
+DWORD _PROC_THREAD_ATTRIBUTE_HANDLE_LIST() {
+    return PROC_THREAD_ATTRIBUTE_HANDLE_LIST;
+}
+
 DWORD _MAKELANGID(WORD p, WORD s) {
     return MAKELANGID(p, s);
 }
@@ -69,7 +73,7 @@ LPWCH _CASTSID(PSID pSid) {
 }
 
 LPPROC_THREAD_ATTRIBUTE_LIST allocateAttributeList(size_t size) {
-    return (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
+    return reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size));
 }
 
 BOOL _IsWindows10OrGreater() {

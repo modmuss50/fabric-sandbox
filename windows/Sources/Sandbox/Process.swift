@@ -40,8 +40,6 @@ public class SandboxedProcess {
         }
       }
 
-      let procThreadAttributeList = try ProcThreadAttributeList(attributes: attributes)
-
       var securityAttributes = SECURITY_ATTRIBUTES(
         nLength: DWORD(MemoryLayout<SECURITY_ATTRIBUTES>.size),
         lpSecurityDescriptor: nil,
@@ -57,16 +55,25 @@ public class SandboxedProcess {
         throw Win32Error("CreatePipe")
       }
 
-      var readPipe: ProcessHandle? = ProcessHandle(readPipeHandle)
+      var readPipe: ProcessHandle = ProcessHandle(readPipeHandle)
       var writePipe: ProcessHandle? = ProcessHandle(writePipeHandle)
 
-      result = SetHandleInformation(readPipe!.handle, HANDLE_FLAG_INHERIT, 0)
+      result = SetHandleInformation(readPipe.handle, HANDLE_FLAG_INHERIT, 0)
       guard result else {
         throw Win32Error("SetHandleInformation")
       }
 
+      result = SetHandleInformation(writePipe!.handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT)
+      guard result else {
+        throw Win32Error("SetHandleInformation")
+      }
+
+      // Only allow the child process to inherit the write handle
+      attributes.append(HandleListProcThreadAttribute(handles: [writePipe!.handle]))
+
+      let procThreadAttributeList = try ProcThreadAttributeList(attributes: attributes)
+
       var startupInfo = STARTUPINFOW()
-      startupInfo.dwFlags |= STARTF_USESTDHANDLES
       startupInfo.cb = DWORD(MemoryLayout<STARTUPINFOEXW>.size)
       startupInfo.hStdOutput = writePipe!.handle
       startupInfo.hStdError = writePipe!.handle
@@ -80,7 +87,7 @@ public class SandboxedProcess {
   }
 
   internal func createSandboxProcess(
-    readPipe: inout ProcessHandle?, writePipe: inout ProcessHandle?, startupInfo: inout STARTUPINFOEXW
+    readPipe: inout ProcessHandle, writePipe: inout ProcessHandle?, startupInfo: inout STARTUPINFOEXW
   ) throws -> Int {
     var commandLine = formatCommandLine(commandLine).wide
     fflush(stdout)
@@ -114,7 +121,7 @@ public class SandboxedProcess {
     // The child process now owns the write end of the pipe, so close it
     writePipe = nil
 
-    let readThread = try ReadThread(readPipe: readPipe!, outputConsumer: outputConsumer)
+    let readThread = try ReadThread(readPipe: readPipe, outputConsumer: outputConsumer)
     readThread.start()
 
     // Now let the child process run
