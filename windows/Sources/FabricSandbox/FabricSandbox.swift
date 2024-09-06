@@ -188,3 +188,7 @@ private func getSandboxCommandLine() throws -> SandboxCommandLine {
   let expanded = try applyDevLaunchInjectorArgs(args)
   return SandboxCommandLine(expanded)
 }
+
+public func run() throws {
+  try FabricSandbox().run()
+}

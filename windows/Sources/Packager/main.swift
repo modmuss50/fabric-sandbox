@@ -29,12 +29,12 @@ let redistributables = swiftRedistributables.merging(vsRedistributables) { $1 }
 
 let dlls = try copyDlls(packageDir, arch: options.arch, redistributables: redistributables)
 
-try options.directory.child("FabricSandbox.dll").copy(to: packageDir.child("FabricSandbox.dll"))
+try options.directory.child("FabricSandbox.exe").copy(to: packageDir.child("FabricSandbox.exe"))
 
 try options.directory.child("Hook.dll").copy(to: packageDir.child("FabricSandboxHook.dll"))
 
 try writeLibraryList(
-  to: packageDir.child("sandbox.libs"), libraries: dlls + ["FabricSandbox.dll"])
+  to: packageDir.child("sandbox.libs"), libraries: dlls + ["FabricSandbox.exe"])
 
 try writeLibraryList(
   to: packageDir.child("runtime.libs"), libraries: dlls + ["FabricSandboxHook.dll"])

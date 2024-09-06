@@ -1,31 +1,8 @@
-def jvmHome = org.gradle.internal.jvm.Jvm.current().javaHome
-
-tasks.register("copyJniHeaders", Sync) {
-    from(new File(jvmHome, "include"))
-    into 'Sources/Jni/include'
-
-    // Flatten the directory structure
-    eachFile {
-        path = name
-    }
-    includeEmptyDirs = false
-
-    // Produces a warning during the swift build if there are unused headers
-    exclude("**/AccessBridge*.h")
-    exclude("**/classfile_constants.h")
-    exclude("**/jawt.h")
-    exclude("**/jawt_md.h")
-    exclude("**/jdwpTransport.h")
-    exclude("**/jvmti.h")
-    exclude("**/jvmticmlr.h")
-}
-
 def swiftTask(Exec t, boolean debug, String arch) {
     t.inputs.file file("Package.swift")
     t.inputs.dir file("Sources")
     t.outputs.dir file(".build/${arch}-unknown-windows-msvc/" + (debug ? "debug" : "release"))
     t.outputs.dir file(".build/artifacts") // Choose a shared output dir to prevent the tasks running at the same time
-    t.dependsOn "copyJniHeaders"
     t.group "swift"
 }
 

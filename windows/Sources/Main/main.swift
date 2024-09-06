@@ -1,0 +1,3 @@
+import FabricSandbox
+
+try! run()

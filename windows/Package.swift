@@ -9,10 +9,9 @@ let linkerSettings: [LinkerSetting] = [
 let package = Package(
     name: "FabricSandbox",
     products: [
-        .library(
+        .executable(
             name: "FabricSandbox",
-            type: .dynamic,
-            targets: ["FabricSandbox"]),
+            targets: ["Main"]),
         .library(
             name: "Hook",
             type: .dynamic,
@@ -27,9 +26,6 @@ let package = Package(
         .package(url: "https://github.com/modmuss50/Detours", revision: "23deb11"),
     ],
     targets: [
-        .target(
-            name: "Jni"
-        ),
         // A C library containing additional Windows SDK functions that arent included in the default WinSDK module
         .target(
             name: "WinSDKExtras",
@@ -63,7 +59,7 @@ let package = Package(
         // The Minecraft/Fabric specific parts of the sandbox
         .target(
             name: "FabricSandbox",
-            dependencies: [ .target(name: "Jni"), .target(name: "WinSDKExtras"), .target(name: "WindowsUtils"), .target(name: "Sandbox"), .product(name: "Logging", package: "swift-log")],
+            dependencies: [ .target(name: "WinSDKExtras"), .target(name: "WindowsUtils"), .target(name: "Sandbox"), .product(name: "Logging", package: "swift-log")],
             swiftSettings: [.interoperabilityMode(.Cxx)],
             linkerSettings: linkerSettings
         ),
@@ -73,6 +69,11 @@ let package = Package(
             dependencies: [ .target(name: "Shared"), .target(name: "WindowsUtils")],
             // https://github.com/apple/swift-package-manager/issues/7319
             swiftSettings: [.interoperabilityMode(.Cxx), .unsafeFlags(["-emit-clang-header-path", "Sources/Hook/include/Runtime-Swift.h"])]
+        ),
+        .executableTarget(
+            name: "Main",
+            dependencies: [ .target(name: "FabricSandbox"),],
+            swiftSettings: [.interoperabilityMode(.Cxx)]
         ),
         // A DLL using Detours to hook into WIN32 API calls
         .target(
