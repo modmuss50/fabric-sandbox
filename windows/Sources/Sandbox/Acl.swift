@@ -1,5 +1,4 @@
 import WinSDK
-import WinSDKExtras
 // Reads the existing ACL for the given path and adds an entry to it that grants the app container the specified access permissions.
 import WindowsUtils
 
@@ -49,7 +48,7 @@ public func setAccess(
       MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
       TrusteeForm: TRUSTEE_IS_SID,
       TrusteeType: TRUSTEE_IS_WELL_KNOWN_GROUP,
-      ptstrName: _CASTSID(appContainer.sid.value)
+      ptstrName: CASTSID(appContainer.sid.value)
     )
   )
 
@@ -117,7 +116,7 @@ private func removeFirstAceIf(
       let accessAllowedAce = ace.assumingMemoryBound(to: ACCESS_ALLOWED_ACE.self).pointee
       let sid = SidFromAccessAllowedAce(ace, accessAllowedAce.SidStart)
 
-      if predicate(.AccessAllowed(sid!)) {
+      if predicate(.AccessAllowed(sid)) {
         toRemove = i
         break outer
       }
@@ -125,7 +124,7 @@ private func removeFirstAceIf(
       let accessDeniedAce = ace.assumingMemoryBound(to: ACCESS_DENIED_ACE.self).pointee
       let sid = SidFromAccessDeniedAce(ace, accessDeniedAce.SidStart)
 
-      if predicate(.AccessDenied(sid!)) {
+      if predicate(.AccessDenied(sid)) {
         toRemove = i
         break outer
       }
@@ -172,7 +171,7 @@ public func grantNamedPipeAccess(
       MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
       TrusteeForm: TRUSTEE_IS_SID,
       TrusteeType: TRUSTEE_IS_WELL_KNOWN_GROUP,
-      ptstrName: _CASTSID(appContainer.sid.value)
+      ptstrName: CASTSID(appContainer.sid.value)
     )
   )
 

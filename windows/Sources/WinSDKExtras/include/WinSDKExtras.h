@@ -39,12 +39,12 @@ DWORD _SECURITY_MAX_SID_SIZE();
 LPWCH _CASTSID(PSID pSid);
 
 // TODO - again how to do this nicely in swift
-LPPROC_THREAD_ATTRIBUTE_LIST allocateAttributeList(size_t dwAttributeCount);
+LPPROC_THREAD_ATTRIBUTE_LIST _allocateAttributeList(size_t dwAttributeCount);
 
 BOOL _IsWindows10OrGreater();
 
-DWORD Win32FromHResult(HRESULT hr);
+DWORD _Win32FromHResult(HRESULT hr);
 
-PSID SidFromAccessAllowedAce(LPVOID ace, DWORD sidStart);
+PSID _SidFromAccessAllowedAce(LPVOID ace, DWORD sidStart);
 
-PSID SidFromAccessDeniedAce(LPVOID ace, DWORD sidStart);
+PSID _SidFromAccessDeniedAce(LPVOID ace, DWORD sidStart);

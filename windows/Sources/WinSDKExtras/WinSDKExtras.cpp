@@ -68,7 +68,7 @@ LPWCH _CASTSID(PSID pSid) {
     return static_cast<LPWCH>(pSid);
 }
 
-LPPROC_THREAD_ATTRIBUTE_LIST allocateAttributeList(size_t size) {
+LPPROC_THREAD_ATTRIBUTE_LIST _allocateAttributeList(size_t size) {
     return (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
 }
 
@@ -77,7 +77,7 @@ BOOL _IsWindows10OrGreater() {
 }
 
 // https://stackoverflow.com/a/22234308
-DWORD Win32FromHResult(HRESULT hr) {
+DWORD _Win32FromHResult(HRESULT hr) {
     if ((hr & 0xFFFF0000) == MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, 0)) {
         return HRESULT_CODE(hr);
     }
@@ -88,10 +88,10 @@ DWORD Win32FromHResult(HRESULT hr) {
     return ERROR_CAN_NOT_COMPLETE;
 }
 
-PSID SidFromAccessAllowedAce(LPVOID ace, DWORD sidStart) {
+PSID _SidFromAccessAllowedAce(LPVOID ace, DWORD sidStart) {
     return &((ACCESS_ALLOWED_ACE*)ace)->SidStart;
 }
 
-PSID SidFromAccessDeniedAce(LPVOID ace, DWORD sidStart) {
+PSID _SidFromAccessDeniedAce(LPVOID ace, DWORD sidStart) {
     return &((ACCESS_DENIED_ACE*)ace)->SidStart;
 }

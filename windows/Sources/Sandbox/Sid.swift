@@ -1,5 +1,4 @@
 import WinSDK
-import WinSDKExtras
 import WindowsUtils
 
 public class Sid: CustomStringConvertible {
@@ -10,7 +9,7 @@ public class Sid: CustomStringConvertible {
   }
 
   static func createWellKnown(_ type: WELL_KNOWN_SID_TYPE) throws -> Sid {
-    var size = DWORD(_SECURITY_MAX_SID_SIZE())
+    var size = DWORD(SECURITY_MAX_SID_SIZE())
     let sid: PSID = HeapAlloc(GetProcessHeap(), DWORD(HEAP_ZERO_MEMORY), SIZE_T(size))!
     var result = CreateWellKnownSid(type, nil, sid, &size)
     guard result else {
@@ -34,7 +33,7 @@ public class Sid: CustomStringConvertible {
     let capabilitySids = UnsafeMutablePointer<UnsafeMutablePointer<PSID?>?>.allocate(capacity: 0)
     var capabilitySidsCount: DWORD = 0
 
-    let result = _DeriveCapabilitySidsFromName(
+    let result = DeriveCapabilitySidsFromName(
       type.wide,
       capabilityGroupSids,
       &capabilityGroupSidsCount,

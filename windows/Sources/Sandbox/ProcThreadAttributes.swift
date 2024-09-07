@@ -1,5 +1,4 @@
 import WinSDK
-import WinSDKExtras
 import WindowsUtils
 
 class ProcThreadAttributeList {
@@ -30,10 +29,6 @@ class ProcThreadAttributeList {
 
     // Allocate memory for the attribute list
     let list = allocateAttributeList(Int(size))
-    guard let list = list else {
-      throw Win32Error("AllocateAttributeList")
-    }
-
     // Initialize the attribute list
     result = InitializeProcThreadAttributeList(list, DWORD(attributeCount), 0, &size)
 
@@ -86,7 +81,7 @@ class SecurityCapabilitiesProcThreadAttribute: ProcThreadAttribute {
   func apply(_ attributeList: inout LPPROC_THREAD_ATTRIBUTE_LIST) throws {
     try updateProcThreadAttribute(
       attributeList: &attributeList,
-      attribute: _PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES(),
+      attribute: PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES(),
       value: &self.securityCapabilities,
       size: MemoryLayout<SECURITY_CAPABILITIES>.size
     )
@@ -99,7 +94,7 @@ class LessPrivilegedAppContainerProcThreadAttribute: ProcThreadAttribute {
 
     try updateProcThreadAttribute(
       attributeList: &attributeList,
-      attribute: _PROC_THREAD_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY(),
+      attribute: PROC_THREAD_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY(),
       value: &enabled,
       size: MemoryLayout<DWORD>.size
     )

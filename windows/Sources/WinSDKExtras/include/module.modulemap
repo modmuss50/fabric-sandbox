@@ -2,4 +2,5 @@ module WinSDKExtras {
     header "WinSDKExtras.h"
     header "SpeakApi.h"
     export *
+    requires cplusplus
 }

@@ -1,5 +1,4 @@
 import WinSDK
-import WinSDKExtras
 import WindowsUtils
 
 public class AppContainer {
@@ -21,7 +20,7 @@ public class AppContainer {
   }
 
   deinit {
-    _DeleteAppContainerProfile(name.wide)
+    let _ = DeleteAppContainerProfile(name.wide)
   }
 
   public static func create(
@@ -43,12 +42,12 @@ public class AppContainer {
     */
 
     // Fow now delete an existing container if it exists
-    let _ = _DeleteAppContainerProfile(name.wide)
+    let _ = DeleteAppContainerProfile(name.wide)
 
     var capabilities = attributes.map { $0.sidAttributes }
     var sid: PSID? = nil
     let result = capabilities.withUnsafeMutableBufferPointer { capabilities in
-      _CreateAppContainerProfile(
+      CreateAppContainerProfile(
           name.wide, name.wide, description.wide,
           capabilities.count > 0 ? capabilities.baseAddress : nil,
           DWORD(capabilities.count), &sid)
@@ -62,7 +61,7 @@ public class AppContainer {
 
   private static func getExisting(_ name: String) -> Sid? {
     var sid: PSID? = nil
-    let result = _DeriveAppContainerSidFromAppContainerName(name.wide, &sid)
+    let result = DeriveAppContainerSidFromAppContainerName(name.wide, &sid)
 
     guard result == S_OK, let sid = sid else {
       return nil

@@ -1,5 +1,4 @@
 import WinSDK
-import WinSDKExtras
 import WindowsUtils
 
 // Copied from https://github.com/apple/swift/blob/ee24bdf06f59d05fea996c230eb4024aa04dd4f5/stdlib/public/Platform/Platform.swift#L153 saves needing to import Foundation

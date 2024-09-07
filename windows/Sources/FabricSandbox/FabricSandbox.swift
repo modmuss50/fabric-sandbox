@@ -1,6 +1,5 @@
 import Sandbox
 import WinSDK
-import WinSDKExtras
 import WindowsUtils
 import Logging
 
@@ -12,7 +11,7 @@ var logger = Logger(label: "net.fabricmc.sandbox")
 
 class FabricSandbox {
   func run() throws {
-    guard _IsWindows10OrGreater() else {
+    guard IsWindows10OrGreater() else {
       throw SandboxError("Fabric Sandbox requires Windows 10 or later")
     }
 

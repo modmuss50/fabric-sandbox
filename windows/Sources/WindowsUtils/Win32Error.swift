@@ -1,5 +1,4 @@
 import WinSDK
-import WinSDKExtras
 
 public struct Win32Error: Error {
   let messsage: String
@@ -30,7 +29,7 @@ internal func toErrorMessage(_ errorCode: DWORD) -> String? {
         DWORD(
           FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
             | FORMAT_MESSAGE_IGNORE_INSERTS),
-        nil, errorCode, _MAKELANGID(WORD(LANG_NEUTRAL), WORD(SUBLANG_DEFAULT)), $0, 0, nil)
+        nil, errorCode, MAKELANGID(WORD(LANG_NEUTRAL), WORD(SUBLANG_DEFAULT)), $0, 0, nil)
     }
   }
 
