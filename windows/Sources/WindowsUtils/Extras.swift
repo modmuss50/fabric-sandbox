@@ -1,6 +1,7 @@
 // A wrapper around the functions in WinSDKExtras as sourcekit-lsp doesn't support indexing c++ modules.
 
 import WinSDK
+import WinSDKExtras
 
 public func CreateAppContainerProfile(
     _ pszAppContainerName: PCWSTR,
