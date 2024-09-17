@@ -15,16 +15,13 @@ jobs:
           msbuild-architecture: x64
       - uses: compnerd/gha-setup-swift@main
         with:
-          github-repo: thebrowsercompany/swift-build
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-tag-name: 20240422.2
-          release-asset-name: installer-amd64.exe
+          branch: swift-6.0-release
+          tag: 6.0-RELEASE
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
       - run: dotnet tool install --global wix --version 5.0.0
-      - run: ./gradlew :windows:copyJniHeaders
       - run: ./gradlew build publish --stacktrace
         env:
           MAVEN_URL: ${{ secrets.MAVEN_URL }}

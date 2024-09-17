@@ -19,7 +19,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - run: dotnet tool install --global wix --version 5.0.0
-      - run: ./gradlew :windows:copyJniHeaders
       - run: ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
@@ -41,7 +40,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - run: ./gradlew :windows:copyJniHeaders
       - name: Swift build
         working-directory: ./windows
         run: swift build
@@ -64,7 +62,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - run: ./gradlew :windows:copyJniHeaders
       - name: Swift format
         working-directory: ./windows
         run: swift run swift-format format -r -p Sources/ Tests/
