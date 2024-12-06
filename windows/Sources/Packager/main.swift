@@ -33,12 +33,6 @@ try options.directory.child("FabricSandbox.exe").copy(to: packageDir.child("Fabr
 
 try options.directory.child("Hook.dll").copy(to: packageDir.child("FabricSandboxHook.dll"))
 
-try writeLibraryList(
-  to: packageDir.child("sandbox.libs"), libraries: dlls + ["FabricSandbox.exe"])
-
-try writeLibraryList(
-  to: packageDir.child("runtime.libs"), libraries: dlls + ["FabricSandboxHook.dll"])
-
 logger.info("Done!")
 
 func copyDlls(_ packageDir: File, arch: Architecture, redistributables: [String: File]) throws -> [String] {
@@ -72,12 +66,6 @@ func copyDlls(_ packageDir: File, arch: Architecture, redistributables: [String:
   }
 
   return swiftDlls
-}
-
-func writeLibraryList(to: File, libraries: [String]) throws {
-  let packageDir = to.parent()!
-  let sorted = try sortDlls(inputs: libraries.map { packageDir.child($0) })
-  try to.writeString(sorted.joined(separator: "\n"))
 }
 
 func resetDir(_ dir: File) throws {

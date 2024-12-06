@@ -31,30 +31,6 @@ struct VisualStudio {
     return vswhere
   }
 
-  /// Returns a list of dll dependencies for the given dll
-  static func getDllDependencies(dll: File) throws -> [String] {
-    guard dll.exists() else {
-      throw PackagerError("\(dll) does not exist")
-    }
-
-    guard dumpBin.exists() else {
-      throw PackagerError("\(dumpBin) does not exist")
-    }
-
-    let output = try run(dumpBin, args: ["/dependents", dll.path()])
-    let lines = output.split(separator: "\r\n")
-
-    // Primitive parsing of the ouput
-    var dependencies = [String]()
-    for line in lines {
-      guard line.contains(".dll") && !line.contains("Dump of file") else {
-        continue
-      }
-      dependencies.append(String(line.filter { $0 != " " }))
-    }
-    return dependencies
-  }
-
   static func getDllArchitecture(dll: File) throws -> Architecture {
     guard dll.exists() else {
       throw PackagerError("\(dll) does not exist")

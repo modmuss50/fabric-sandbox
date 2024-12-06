@@ -11,9 +11,9 @@ nonisolated(unsafe) var logger = Logger(label: "net.fabricmc.sandbox")
 
 class FabricSandbox {
   func run() throws {
-    guard IsWindows10OrGreater() else {
-      throw SandboxError("Fabric Sandbox requires Windows 10 or later")
-    }
+    // guard IsWindows10OrGreater() else {
+    //   throw SandboxError("Fabric Sandbox requires Windows 10 or later")
+    // }
 
     // Only allow one instance of the sandbox
     let mutex = CreateMutexW(nil, true, "FabricSandbox".wide)
@@ -31,23 +31,27 @@ class FabricSandbox {
     logger.info("Fabric Sandbox")
 
     let commandLine = try getSandboxCommandLine()
-    let workingDirectory = try getWorkingDirectory()
-    let javaPath = try commandLine.getApplicationPath()
-    let javaDirectory = try commandLine.getJavaHome()
-    let isDevEnv = commandLine.isDevEnv()
-    let dotMinecraft = isDevEnv ? workingDirectory : try getDotMinecraftDir()
-
-    guard let javaPath = javaPath, let javaDirectory = javaDirectory else {
-      throw SandboxError("Failed to get Java path or home")
-    }
-
     if commandLine.getJvmProp("fabric.log.level") == "debug" {
       logger.logLevel = .debug
     }
 
+    let workingDirectory = try getWorkingDirectory()
+    let isDevEnv = commandLine.isDevEnv()
+    let dotMinecraft = isDevEnv ? workingDirectory : try getDotMinecraftDir()
+
+    let javaHome = commandLine.getJvmProp("fabric.sandbox.javaHome")
+    guard let javaHome = javaHome else {
+      throw SandboxError("Could not find Java home in command line arguments")
+    }
+
+    let javaPath = File(javaHome).child("bin").child("javaw.exe")
+    guard javaPath.exists() else {
+      throw SandboxError("Java not found at \(javaPath)")
+    }
+
     logger.debug("Working directory: \(workingDirectory)")
     logger.debug("Java path: \(javaPath)")
-    logger.debug("Java home: \(javaDirectory)")
+    logger.debug("Java home: \(javaHome)")
     logger.debug("Is development env: \(isDevEnv)")
     logger.debug(".minecraft: \(dotMinecraft)")
 
@@ -140,7 +144,7 @@ class FabricSandbox {
 
     // Grant read and execute to Java home
     try grantAccess(
-      javaDirectory, appContainer: container,
+      File(javaHome), appContainer: container,
       accessPermissions: [.genericRead, .genericExecute])
 
     // Create a named pipe server for IPC with the sandboxed process
