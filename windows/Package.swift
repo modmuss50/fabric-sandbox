@@ -18,7 +18,8 @@ let package = Package(
             type: .dynamic,
             targets: ["Hook"]),
         .executable(name: "SandboxTest", targets: ["SandboxTest"]),
-        .executable(name: "Packager", targets: ["Packager"])
+        .executable(name: "Packager", targets: ["Packager"]),
+        .executable(name: "Setup", targets: ["Setup"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-format", from: "600.0.0"),
@@ -86,6 +87,17 @@ let package = Package(
             dependencies: [.target(name: "WinSDKExtras"), .target(name: "WindowsUtils"), .target(name: "Sandbox"), .product(name: "Logging", package: "swift-log")],
             swiftSettings: [.interoperabilityMode(.Cxx)],
             linkerSettings: linkerSettings
+        ),
+        .executableTarget(
+            name: "Setup",
+            dependencies: [.target(name: "WinSDKExtras"), .target(name: "WindowsUtils"), .product(name: "Logging", package: "swift-log")],
+            swiftSettings: [.interoperabilityMode(.Cxx)],
+            linkerSettings: linkerSettings + [ .unsafeFlags([
+                "-Xlinker", "/manifest:embed",
+                "-Xlinker", "/MANIFESTUAC:level='requireAdministrator'",
+                "-Xlinker", "/SUBSYSTEM:WINDOWS",
+                "-Xlinker", "/ENTRY:mainCRTStartup"
+            ])]
         ),
         .testTarget(
             name: "FabricSandboxTests",
