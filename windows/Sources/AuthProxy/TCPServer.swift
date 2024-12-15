@@ -144,7 +144,7 @@ private class TCPClientThread: Thread {
         guard result == 0 else {
             throw WinSockError("WSARecv")
         }
-        return buffer.map { UInt8($0) }
+        return buffer.map { UInt8(bitPattern: $0) }
     }
 
     private func writeData(_ data: [UInt8]) throws {

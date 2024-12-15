@@ -3,6 +3,9 @@
 #include <windows.h>
 #include <sddl.h>
 
+// Provide some additional definitions that are not available by default in WinSDK
+#include <wininet.h>
+
 // userenv.h
 HRESULT _CreateAppContainerProfile(
     _In_ PCWSTR pszAppContainerName,

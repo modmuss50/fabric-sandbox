@@ -4,6 +4,7 @@ import PackageDescription
 
 let linkerSettings: [LinkerSetting] = [
     .unsafeFlags(["-Xlinker", "/IGNORE:4217"]),
+    .linkedLibrary("Wininet.lib"),
 ]
 
 let package = Package(
@@ -18,8 +19,7 @@ let package = Package(
             type: .dynamic,
             targets: ["Hook"]),
         .executable(name: "SandboxTest", targets: ["SandboxTest"]),
-        .executable(name: "Packager", targets: ["Packager"]),
-        .executable(name: "AuthProxy", targets: ["AuthProxy"]),
+        .executable(name: "Packager", targets: ["Packager"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-format", from: "600.0.0"),
@@ -81,10 +81,11 @@ let package = Package(
             dependencies: [ .target(name: "Runtime"), .product(name: "Detours", package: "Detours")],
             swiftSettings: [.interoperabilityMode(.Cxx)]
         ),
-        .executableTarget(
+        .target(
             name: "AuthProxy",
             dependencies: [ .target(name: "WindowsUtils"), .target(name: "WinSDKExtras") ],
-            swiftSettings: [.interoperabilityMode(.Cxx)]
+            swiftSettings: [.interoperabilityMode(.Cxx)],
+            linkerSettings: linkerSettings
         ),
         // Packager to copy all the required files into a single directory
         .executableTarget(
@@ -95,7 +96,7 @@ let package = Package(
         ),
         .testTarget(
             name: "FabricSandboxTests",
-            dependencies: [ .target(name: "FabricSandbox"), .target(name: "WindowsUtils"), .product(name: "Testing", package: "swift-testing")],
+            dependencies: [ .target(name: "FabricSandbox"), .target(name: "WindowsUtils"), .target(name: "AuthProxy"), .product(name: "Testing", package: "swift-testing")],
             swiftSettings: [.interoperabilityMode(.Cxx)],
             linkerSettings: linkerSettings
         ),

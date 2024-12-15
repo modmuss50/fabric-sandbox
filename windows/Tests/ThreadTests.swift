@@ -7,7 +7,7 @@ struct ThreadTests {
     let thread = try TestThread()
     thread.start()
     #expect(thread.isRunning())
-    try thread.join()
+    thread.join()
     #expect(thread.ran)
   }
 }

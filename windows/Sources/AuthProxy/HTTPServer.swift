@@ -33,6 +33,8 @@ private class HTTPRequestHandler: TCPHandler {
         let buffer = ByteBuffer()
         buffer.appendLine("HTTP/1.1 \(response.statusCode) OK")
         buffer.appendLine("Content-Length: \(response.content.count)")
+        // UTF-8 encoding is assumed
+        buffer.appendLine("Content-Type: text/plain; charset=utf-8")
         for (key, value) in response.headers {
             buffer.appendLine("\(key): \(value)")
         }
