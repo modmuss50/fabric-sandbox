@@ -37,7 +37,7 @@ open class Thread {
     return true
   }
 
-  public func join() throws {
+  public func join() {
     guard let handle = handle else {
       return
     }

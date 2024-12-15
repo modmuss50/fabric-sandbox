@@ -124,7 +124,7 @@ public class SandboxedProcess {
     var exitCode: DWORD = 0
     let _ = GetExitCodeProcess(processInformation.hProcess, &exitCode)
 
-    try readThread.join()
+    readThread.join()
     return Int(exitCode)
   }
 }
