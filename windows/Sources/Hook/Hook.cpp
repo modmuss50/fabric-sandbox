@@ -8,26 +8,27 @@
 #include <AtlBase.h>
 #include <AtlConv.h>
 #include <AtlCom.h>
+#include <map>
 
 using namespace std::string_literals;
-#pragma clang diagnostic ignored "-Wmicrosoft-cast"
 
 #define VTABLE_INDEX_SPEAK 20
 #define VTABLE_INDEX_SKIP 23
 
+#define HOOK(NAME, RETURN_TYPE, ARGS) \
+    RETURN_TYPE WINAPI NAME##Patch ARGS; \
+    static RETURN_TYPE (WINAPI* True##NAME)ARGS = NAME; \
+    RETURN_TYPE WINAPI NAME##Patch ARGS
+
+#define DETOUR(NAME) \
+    if (dwReason == DLL_PROCESS_ATTACH) { DetourAttach(&(PVOID&)True##NAME, (PVOID)NAME##Patch); } else { DetourDetach(&(PVOID&)True##NAME, (PVOID)NAME##Patch); }
+
+#define DETOUR_VTABLE(PATCH_FUNC, VTABLE) \
+    if (dwReason == DLL_PROCESS_ATTACH) { DetourAttach(&(PVOID&) VTABLE, (PVOID) PATCH_FUNC); } else { DetourDetach(&(PVOID&) VTABLE, (PVOID) PATCH_FUNC); }
+
 // Workaround for GetVolumeInformationW not working in a UWP application
 // This is by creating a handle to a file on the drive and then using GetVolumeInformationByHandleW with that handle
-static BOOL (WINAPI* TrueGetVolumeInformationW)(LPCWSTR, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD) = GetVolumeInformationW;
-BOOL WINAPI GetVolumeInformationWPatch(
-    _In_opt_ LPCWSTR lpRootPathName,
-    _Out_writes_opt_(nVolumeNameSize) LPWSTR lpVolumeNameBuffer,
-    _In_ DWORD nVolumeNameSize,
-    _Out_opt_ LPDWORD lpVolumeSerialNumber,
-    _Out_opt_ LPDWORD lpMaximumComponentLength,
-    _Out_opt_ LPDWORD lpFileSystemFlags,
-    _Out_writes_opt_(nFileSystemNameSize) LPWSTR lpFileSystemNameBuffer,
-    _In_ DWORD nFileSystemNameSize
-    ) {
+HOOK(GetVolumeInformationW, BOOL, (LPCWSTR lpRootPathName, LPWSTR lpVolumeNameBuffer, DWORD nVolumeNameSize, LPDWORD lpVolumeSerialNumber, LPDWORD lpMaximumComponentLength, LPDWORD lpFileSystemFlags, LPWSTR lpFileSystemNameBuffer, DWORD nFileSystemNameSize)) {
     BOOL result = TrueGetVolumeInformationW(
             lpRootPathName,
             lpVolumeNameBuffer,
@@ -84,8 +85,7 @@ BOOL WINAPI GetVolumeInformationWPatch(
 }
 
 // Forward ClipCursor and SetCursorPos, to the parnet process as these functions are not available in UWP
-static BOOL (WINAPI* TrueClipCursor)(const RECT*) = ClipCursor;
-BOOL WINAPI ClipCursorPatch(const RECT* lpRect) {
+HOOK(ClipCursor, BOOL, (const RECT* lpRect)) {
     if (lpRect == nullptr) {
         Runtime::clipCursor(-1, -1, -1, -1);
     } else {
@@ -94,8 +94,7 @@ BOOL WINAPI ClipCursorPatch(const RECT* lpRect) {
     return true;
 }
 
-static BOOL (WINAPI* TrueSetCursorPos)(int, int) = SetCursorPos;
-BOOL WINAPI SetCursorPosPatch(int x, int y) {
+HOOK(SetCursorPos, BOOL, (int x, int y)) {
     Runtime::setCursorPos(x, y);
     return true;
 }
@@ -137,27 +136,26 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
     if (DetourIsHelperProcess()) {
         return true;
     }
+
     if (dwReason == DLL_PROCESS_ATTACH) {
         Runtime::processAttach();
         DetourRestoreAfterWith();
+    }
 
+    if (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_PROCESS_DETACH) {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)TrueGetVolumeInformationW, GetVolumeInformationWPatch);
-        DetourAttach(&(PVOID&)TrueClipCursor, ClipCursorPatch);
-        DetourAttach(&(PVOID&)TrueSetCursorPos, SetCursorPosPatch);
-        DetourAttach(&(PVOID&)spVoiceVTable.speak, SpeakPatch);
-        DetourAttach(&(PVOID&)spVoiceVTable.skip, SpeakSkipPatch);
+
+        DETOUR(GetVolumeInformationW);
+        DETOUR(ClipCursor);
+        DETOUR(SetCursorPos);
+        DETOUR_VTABLE(SpeakPatch, spVoiceVTable.speak);
+        DETOUR_VTABLE(SpeakSkipPatch, spVoiceVTable.skip);
+
         DetourTransactionCommit();
-    } else if (dwReason == DLL_PROCESS_DETACH) {
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-        DetourDetach(&(PVOID&)TrueGetVolumeInformationW, GetVolumeInformationWPatch);
-        DetourDetach(&(PVOID&)TrueClipCursor, ClipCursorPatch);
-        DetourDetach(&(PVOID&)TrueSetCursorPos, SetCursorPosPatch);
-        DetourDetach(&(PVOID&)spVoiceVTable.speak, SpeakPatch);
-        DetourDetach(&(PVOID&)spVoiceVTable.skip, SpeakSkipPatch);
-        DetourTransactionCommit();
+    }
+
+    if (dwReason == DLL_PROCESS_DETACH) {
         Runtime::processDetach();
     }
     return true;
