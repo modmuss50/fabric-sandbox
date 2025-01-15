@@ -78,7 +78,8 @@ let package = Package(
         .target(
             name: "Hook",
             dependencies: [ .target(name: "Runtime"), .product(name: "Detours", package: "Detours")],
-            swiftSettings: [.interoperabilityMode(.Cxx)]
+            swiftSettings: [.interoperabilityMode(.Cxx)],
+            linkerSettings: [.linkedLibrary("Hid.lib")]
         ),
         // Packager to copy all the required files into a single directory
         .executableTarget(

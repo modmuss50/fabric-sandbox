@@ -1,6 +1,7 @@
 #include "Runtime-Swift.h"
 
 #include <windows.h>
+#include <Hidsdi.h>
 #include <Detours.h>
 #include <string>
 #include <stdexcept>
@@ -8,7 +9,9 @@
 #include <AtlBase.h>
 #include <AtlConv.h>
 #include <AtlCom.h>
-#include <map>
+#include <vector>
+#include <mutex>
+#include <optional>
 
 using namespace std::string_literals;
 
@@ -26,9 +29,53 @@ using namespace std::string_literals;
 #define DETOUR_VTABLE(PATCH_FUNC, VTABLE) \
     if (dwReason == DLL_PROCESS_ATTACH) { DetourAttach(&(PVOID&) VTABLE, (PVOID) PATCH_FUNC); } else { DetourDetach(&(PVOID&) VTABLE, (PVOID) PATCH_FUNC); }
 
+namespace {
+    static std::vector<std::string> deviceNames{};
+    static std::mutex deviceNamesMutex{};
+
+    size_t getDeviceNameIndex(const std::string& str) {
+        std::lock_guard<std::mutex> lock(deviceNamesMutex);
+
+        auto it = std::find(deviceNames.begin(), deviceNames.end(), str);
+        if (it != deviceNames.end()) {
+            return std::distance(deviceNames.begin(), it);
+        }
+        
+        deviceNames.push_back(str);
+        return deviceNames.size() - 1;
+    }
+
+    // Copy a std::wstring into a sized wchar_t buffer
+    void copyString(const std::string& str, PVOID buffer, ULONG bufferLength) {
+        std::wstring wstr{str.begin(), str.end()};
+        std::memcpy(buffer, wstr.c_str(), wstr.size());
+        ((wchar_t*)buffer)[wstr.size()] = '\0';
+    }
+
+    std::optional<std::string> getDeviceName(HANDLE handle) {
+        std::lock_guard<std::mutex> lock(deviceNamesMutex);
+
+        auto index = reinterpret_cast<size_t>(handle);
+
+        if (index < deviceNames.size()) {
+            return deviceNames[index];
+        }
+
+        return std::nullopt;
+    }
+}
+
 // Workaround for GetVolumeInformationW not working in a UWP application
 // This is by creating a handle to a file on the drive and then using GetVolumeInformationByHandleW with that handle
-HOOK(GetVolumeInformationW, BOOL, (LPCWSTR lpRootPathName, LPWSTR lpVolumeNameBuffer, DWORD nVolumeNameSize, LPDWORD lpVolumeSerialNumber, LPDWORD lpMaximumComponentLength, LPDWORD lpFileSystemFlags, LPWSTR lpFileSystemNameBuffer, DWORD nFileSystemNameSize)) {
+HOOK(GetVolumeInformationW, BOOL, (
+    LPCWSTR lpRootPathName,
+    LPWSTR lpVolumeNameBuffer,
+    DWORD nVolumeNameSize,
+    LPDWORD lpVolumeSerialNumber,
+    LPDWORD lpMaximumComponentLength,
+    LPDWORD lpFileSystemFlags,
+    LPWSTR lpFileSystemNameBuffer,
+    DWORD nFileSystemNameSize)) {
     BOOL result = TrueGetVolumeInformationW(
             lpRootPathName,
             lpVolumeNameBuffer,
@@ -99,6 +146,54 @@ HOOK(SetCursorPos, BOOL, (int x, int y)) {
     return true;
 }
 
+// The sandboxed process may not have access to read from HID devices, so we need to patch CreateFileA to return a dummy handle for XInput devices
+// This specifically fixes SDL not being able to read the manufacturer and product strings of XInput devices
+// See the SDL code here: https://github.com/libsdl-org/SDL/blob/84d35587ee400d9704e38042652fe5cbaab30c68/src/joystick/windows/SDL_rawinputjoystick.c#L904
+HOOK(CreateFileA, HANDLE, (
+    LPCSTR fileName,
+    DWORD desiredAccess,
+    DWORD shareMode,
+    LPSECURITY_ATTRIBUTES
+    securityAttributes,
+    DWORD creationDisposition,
+    DWORD flagsAndAttributes,
+    HANDLE templateFile)) {
+    // First check if the file is a HID device
+    if (std::strncmp(fileName, R"(\\?\HID)", 7) == 0) {
+        // Check check if the HID device is an XInput device
+        if (std::strstr(fileName, R"(IG_)")) {
+            // Now things get really fun, we return a dummy handle and hope that its only used for the following 2 patched functions
+            return reinterpret_cast<HANDLE>(getDeviceNameIndex("XInput"));
+        }
+    }
+
+    return TrueCreateFileA(fileName, desiredAccess, shareMode, securityAttributes, creationDisposition, flagsAndAttributes, templateFile);
+}
+
+HOOK(HidD_GetManufacturerString, BOOLEAN, (HANDLE deviceObject, PVOID buffer, ULONG bufferLength)) {
+    if (auto deviceName = getDeviceName(deviceObject); deviceName) {
+        auto name = Runtime::getHidManufacturerString(*deviceName);
+        if (name) {
+            copyString(name.get(), buffer, bufferLength);
+            return true;
+        }
+    }
+
+    return TrueHidD_GetManufacturerString(deviceObject, buffer, bufferLength);
+}
+
+HOOK(HidD_GetProductString, BOOLEAN, (HANDLE deviceObject, PVOID buffer, ULONG bufferLength)) {
+    if (auto deviceName = getDeviceName(deviceObject); deviceName) {
+        auto name = Runtime::getHidProductString(*deviceName);
+        if (name) {
+            copyString(name.get(), buffer, bufferLength);
+            return true;
+        }
+    }
+
+    return TrueHidD_GetProductString(deviceObject, buffer, bufferLength);
+}
+
 HRESULT __stdcall SpeakPatch(ISpVoice* This, LPCWSTR pwcs, DWORD dwFlags, ULONG *pulStreamNumber) {
     CW2A utf8(pwcs, CP_UTF8);
     Runtime::speak(utf8.m_psz, dwFlags);
@@ -149,6 +244,9 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
         DETOUR(GetVolumeInformationW);
         DETOUR(ClipCursor);
         DETOUR(SetCursorPos);
+        DETOUR(CreateFileA);
+        DETOUR(HidD_GetManufacturerString);
+        DETOUR(HidD_GetProductString);
         DETOUR_VTABLE(SpeakPatch, spVoiceVTable.speak);
         DETOUR_VTABLE(SpeakSkipPatch, spVoiceVTable.skip);
 

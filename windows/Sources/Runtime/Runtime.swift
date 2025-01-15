@@ -42,6 +42,15 @@ public func speakSkip() {
   sendMessage(.speakSkip)
 }
 
+public func getHidManufacturerString(deviceName: String) -> String? {
+  // TODO send a message to the privileged process to get the manufacturer string for the given device
+  return "TODO: \(deviceName)"
+}
+
+public func getHidProductString(deviceName: String) -> String? {
+  return "TODO: \(deviceName)"
+}
+
 public func processDetach() {
   // Disconnect and close the pipe client
   pipeClient = nil
