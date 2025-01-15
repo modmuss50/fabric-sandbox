@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <sddl.h>
 #include <userenv.h>
+#include <Hidsdi.h>
 
 DWORD _PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES();
 

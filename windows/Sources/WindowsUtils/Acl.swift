@@ -403,3 +403,27 @@ extension NamedPipeClient: SecurityObject {
     }
   }
 }
+
+extension HidDevice: SecurityObject {
+  public func getACL() throws -> PACL {
+    var acl: PACL? = nil
+    let result = GetNamedSecurityInfoW(
+      self.devicePath.wide, SE_FILE_OBJECT, SECURITY_INFORMATION(DACL_SECURITY_INFORMATION), nil, nil, &acl, nil, nil)
+
+    guard result == ERROR_SUCCESS, let acl = acl else {
+      throw Win32Error("GetNamedSecurityInfoW(\(self.devicePath))", errorCode: result)
+    }
+    return acl
+  }
+
+  public func setACL(acl: PACL, accessMode: AccessMode) throws {
+    let result = self.devicePath.withCString(encodedAs: UTF16.self) {
+      SetNamedSecurityInfoW(
+        UnsafeMutablePointer(mutating: $0), SE_FILE_OBJECT, accessMode.securityInformation, nil, nil, acl, nil)
+    }
+
+    guard result == ERROR_SUCCESS else {
+      throw Win32Error("SetNamedSecurityInfoW(\(self.devicePath))", errorCode: result)
+    }
+  }
+}
